@@ -27,6 +27,9 @@ var GameState = {
 
   	this.pet = this.game.add.sprite(100, 400, 'pet');
   	this.pet.anchor.setTo(0.5);
+      
+    // spritesheet animation
+    this.pet.animations.add('funnyfaces', [1, 2, 3, 2, 1], 7, false);
 
   	//custom properties
   	this.pet.customParams = {health: 100, fun: 100};
@@ -62,6 +65,19 @@ var GameState = {
     // nothing is selected
     this.selectedItem = null;
     this.uiBlocked = false;
+      
+    // TEXT STAT
+    var style = {font: '20px Arial', fill: '#fff'};
+    this.game.add.text(10, 20, 'Health:', style);
+    this.game.add.text(140, 20, 'Fun:', style);
+      
+    this.healthText = this.game.add.text(80, 20, '', style);
+    this.funText = this.game.add.text(185, 20, '', style);
+      
+    this.refreshStats();
+      
+    // decrease the health every 5 seconds
+    this.statsDecreaser = this.game.time.events.loop(Phaser.Timer.SECOND * 5, this.reduceProperties, this);
 
   },
     
@@ -104,6 +120,8 @@ var GameState = {
               
               newItem.destroy();
               
+              this.pet.animations.play('funnyfaces');
+              
               this.uiBlocked = false;
               
               var stat;
@@ -112,10 +130,12 @@ var GameState = {
               {
                   if (newItem.customParams.hasOwnProperty(stat))
                   {
-                      console.log(stat);
+                      //console.log(stat);
                       this.pet.customParams[stat] += newItem.customParams[stat];
                   }
               }
+              
+              this.refreshStats();
               
           }, this);
           
@@ -125,7 +145,8 @@ var GameState = {
   },
 
   rotatePet: function(sprite, event) {
-      if (!this.uiBlocked) {
+      if (!this.uiBlocked)
+      {
           console.log("rotating..");
           
           this.uiBlocked = true;
@@ -140,10 +161,36 @@ var GameState = {
               this.uiBlocked = false;
               sprite.alpha = 1;
               this.pet.customParams.fun += 10;
-              console.log(this.pet.customParams.fun);
+              //console.log(this.pet.customParams.fun);
+              this.refreshStats();
           }, this);
           petRotation.start();
       }
+  },
+    
+  refreshStats: function() {
+      this.healthText.text = this.pet.customParams.health;
+      this.funText.text = this.pet.customParams.fun;
+  },
+    
+  reduceProperties: function() {
+      this.pet.customParams.health -= 10;
+      this.pet.customParams.fun -= 15;
+      this.refreshStats();
+  },
+    
+  update: function() {
+      if (this.pet.customParams.health <= 0 || this.pet.customParams.fun <= 0)
+      {
+          this.pet.frame = 4;
+          this.uiBlocked = true;
+          
+          this.game.time.events.add(2000, this.gameOver, this);
+      }
+  },
+    
+  gameOver: function() {
+      this.game.state.restart();
   }
   
 };
